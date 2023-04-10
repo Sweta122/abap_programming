@@ -1,0 +1,1190 @@
+*&---------------------------------------------------------------------*
+*& Report  ZMM_GRN_REPORT
+*&
+*&---------------------------------------------------------------------*
+*& Developer - Sweta Vishwakarma
+*& Tcode - ZMM_SUPPLIER
+*&---------------------------------------------------------------------*
+REPORT zmm_grn_report.
+
+TYPE-POOLS : slis.
+
+TABLES : ekko,ekpo,ekbe,essr,bseg.
+* types declaration
+TYPES : BEGIN OF ty_final,
+          lifnr        TYPE ekko-lifnr,
+          name1        TYPE lfa1-lifnr,
+          ebeln        TYPE ekko-ebeln,
+          ebelp        TYPE ekbe-ebelp,
+          po_dt        TYPE ekko-bedat,
+          bsart        TYPE ekko-bsart,
+          werks        TYPE ekpo-werks,
+          grn_no       TYPE ekbe-belnr,
+          grn_dt       TYPE ekbe-budat,
+          se_no        TYPE ekbe-belnr,
+          se_dt        TYPE ekbe-budat,
+          ven_inv_no   TYPE rbkp-xblnr,
+          ven_inv_dt   TYPE rbkp-zfbdt,
+          miro_no      TYPE ekbe-belnr,
+          miro_dt      TYPE ekbe-budat,
+          inv_amt      TYPE ekbe-dmbtr,
+          zterm        TYPE ekko-zterm,
+          pay_term_day TYPE rbkp-zbd1t,
+          dppct        TYPE ekpo-dppct,
+          dpamt        TYPE ekpo-dpamt,
+          dpdat        TYPE ekpo-dpdat,
+          budat        TYPE bsik-budat,
+          wrbtr        TYPE bsik-wrbtr,
+          clr_doc      TYPE bsik-augbl,
+          pay_due_date TYPE sy-datum,
+          pay_date     TYPE bsik-augdt,
+          banka        TYPE bnka-banka,
+          pay_amt      TYPE bsik-dmbtr,
+          bal_pay_amt  TYPE bsik-dmbtr,
+          delay_d      TYPE bsik-zbd3t,
+          delay_m      TYPE bsik-zbd3t,
+          credit_msme  TYPE char02,
+          udyam        TYPE char02,
+          stcd1        TYPE lfa1-stcd1,
+          stcd2        TYPE lfa1-stcd2,
+          iv_cat       TYPE rbkp-ivtyp,
+          mblnr        TYPE mseg-mblnr,
+          lblni        TYPE essr-lblni,
+          belnr        TYPE ekbe-belnr,
+          menge        TYPE ekbe-menge,
+          valut        TYPE bseg-valut,
+        END OF ty_final,
+        BEGIN OF ty_lfa1,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+          stcd1 TYPE lfa1-stcd1,
+          stcd2 TYPE lfa1-stcd2,
+          zterm TYPE lfb1-zterm,
+        END OF ty_lfa1,
+        BEGIN OF ty_rbkp,
+          belnr TYPE rbkp-belnr,
+          gjahr TYPE rbkp-gjahr,
+          zuonr TYPE rbkp-zuonr,
+          xblnr TYPE rbkp-xblnr,
+          zfbdt TYPE rbkp-zfbdt,
+          zbd1t TYPE rbkp-zbd1t,
+          zbd2t TYPE rbkp-zbd2t,
+          zbd3t TYPE rbkp-zbd3t,
+          ivtyp TYPE rbkp-ivtyp,
+          rmwwr TYPE rbkp-rmwwr,
+          lifnr TYPE rbkp-lifnr,
+        END OF ty_rbkp,
+        BEGIN OF ty_ekko,
+          lifnr TYPE ekko-lifnr,
+          ebeln TYPE ekko-ebeln,
+          bsart TYPE ekko-bsart,
+          bedat TYPE ekko-bedat,
+          dppct TYPE ekko-dppct,
+          dpamt TYPE ekko-dpamt,
+          dpdat TYPE ekko-dpdat,
+          zbd1t TYPE ekko-zbd1t,
+          zbd2t TYPE ekko-zbd2t,
+          zbd3t TYPE ekko-zbd3t,
+          zterm TYPE ekko-zterm,
+          belnr TYPE bkpf-belnr,
+          gjahr TYPE bkpf-gjahr,
+          awkey TYPE bkpf-awkey,
+        END OF ty_ekko,
+        BEGIN OF ty_ekpo,
+          ebeln TYPE ekpo-ebeln,
+          ebelp TYPE ekpo-ebelp,
+          werks TYPE ekpo-werks,
+*          zterm TYPE ekpo-zterm,
+        END OF ty_ekpo,
+        BEGIN OF ty_amt,
+          dmbtr TYPE bseg-dmbtr,
+        END OF ty_amt,
+        BEGIN OF ty_bsak,
+          augdt TYPE bsak-augdt,
+          augbl TYPE bsak-augbl,
+          belnr TYPE bsak-belnr,
+          gjahr TYPE bsak-gjahr,
+          dmbtr TYPE bsak-dmbtr,
+          zuonr TYPE bsak-zuonr,
+          awkey TYPE bkpf-awkey,
+        END OF ty_bsak,
+        BEGIN OF ty_bseg,
+          augdt TYPE bseg-augdt,
+          augbl TYPE bseg-augbl,
+          dmbtr TYPE bseg-dmbtr,
+          pswsl TYPE bseg-pswsl,  "currency
+          valut TYPE bseg-valut,
+          ebeln TYPE bseg-ebeln,
+          ebelp TYPE bseg-ebelp,
+          zfbdt TYPE bseg-zfbdt,
+          shkzg TYPE bseg-shkzg,
+          belnr TYPE bseg-belnr,
+          gjahr TYPE bseg-gjahr,
+        END OF ty_bseg,
+        BEGIN OF ty_essr,
+          ebeln TYPE essr-ebeln,
+          ebelp TYPE essr-ebelp,
+          lblni TYPE essr-lblni,
+          budat TYPE essr-budat,
+        END OF ty_essr,
+        BEGIN OF ty_ekbe,
+          ebeln TYPE ekbe-ebeln,
+          gjahr TYPE ekbe-gjahr,
+          ebelp TYPE ekbe-ebelp,
+          belnr TYPE ekbe-belnr,
+          budat TYPE ekbe-budat,
+          menge TYPE ekbe-menge,
+          bewtp TYPE ekbe-bewtp,
+          dmbtr TYPE ekbe-dmbtr,
+          awkey TYPE bkpf-awkey,
+        END OF ty_ekbe,
+        BEGIN OF ty_bsik,
+*          bukrs TYPE bsik-bukrs,
+          lifnr TYPE bsik-lifnr,
+*          belnr TYPE bsik-belnr,
+*          zuonr TYPE bsik-zuonr,  "Assignment
+*          xblnr TYPE bsik-xblnr,  "Reference
+**          ebeln TYPE bsik-ebeln,
+          augdt TYPE bsik-augdt,
+**          budat TYPE bsik-budat,
+*          wrbtr TYPE bsik-wrbtr,
+          augbl TYPE bsik-augbl,
+          dmbtr TYPE bsik-dmbtr,
+          umskz TYPE bsik-umskz,
+          zfbdt TYPE bsik-zfbdt,
+          shkzg TYPE bsik-shkzg,
+          zuonr TYPE bsik-zuonr,
+          gjahr TYPE bsik-gjahr,
+        END OF ty_bsik,
+        BEGIN OF ty_ven_bank,
+          lifnr TYPE lfbk-lifnr,
+          banks TYPE lfbk-banks,
+          bankl TYPE lfbk-bankl,
+          banka TYPE bnka-banka,
+        END OF ty_ven_bank,
+        BEGIN OF ty_bkpf,
+          bukrs TYPE bkpf-bukrs,
+          xblnr TYPE bkpf-xblnr,
+          awkey TYPE bkpf-awkey,
+          belnr TYPE bkpf-belnr,
+          gjahr TYPE bkpf-gjahr,
+        END OF ty_bkpf.
+
+*internal table and work area
+DATA: it_lfa1      TYPE STANDARD TABLE OF ty_lfa1,
+      wa_lfa1      TYPE ty_lfa1,
+      it_rbkp      TYPE STANDARD TABLE OF ty_rbkp,
+      wa_rbkp      TYPE ty_rbkp,
+      it_ekko      TYPE STANDARD TABLE OF ty_ekko,
+      wa_ekko      TYPE ty_ekko,
+      it_ekpo      TYPE STANDARD TABLE OF ty_ekpo,
+      wa_ekpo      TYPE ty_ekpo,
+      it_bseg      TYPE STANDARD TABLE OF ty_bseg,
+      wa_bseg      TYPE ty_bseg,
+      wa_bseg1     TYPE ty_bseg,
+      it_essr      TYPE STANDARD TABLE OF ty_essr,
+      wa_essr      TYPE ty_essr,
+      it_ekbe      TYPE STANDARD TABLE OF ty_ekbe,
+      wa_ekbe      TYPE ty_ekbe,
+      it_ekbe_grn  TYPE STANDARD TABLE OF ty_ekbe,
+      wa_ekbe_grn  TYPE ty_ekbe,
+      it_ekbe_miro TYPE STANDARD TABLE OF ty_ekbe,
+      wa_ekbe_miro TYPE ty_ekbe,
+      it_bsak      TYPE STANDARD TABLE OF ty_bsak,
+      wa_bsak      TYPE ty_bsak,
+      it_bsik      TYPE STANDARD TABLE OF ty_bsik,
+      wa_bsik      TYPE ty_bsik,
+      it_ven_bank  TYPE STANDARD TABLE OF ty_ven_bank,
+      wa_ven_bank  TYPE ty_ven_bank,
+      it_bkpf      TYPE STANDARD TABLE OF ty_bkpf,
+      wa_bkpf      TYPE ty_bkpf,
+      it_final     TYPE STANDARD TABLE OF ty_final,
+      wa_final     TYPE ty_final,
+      it_fcat      TYPE slis_t_fieldcat_alv,
+      w_fcat       TYPE slis_fieldcat_alv,
+      it_sort      TYPE slis_t_sortinfo_alv,
+*      it_top       TYPE slis_t_listheader,
+*      w_top        TYPE slis_listheader,
+      lv_total_amt TYPE bseg-dmbtr,
+      lv_paid_amt  TYPE bseg-dmbtr.
+*DATA: lv_days TYPE i.
+FIELD-SYMBOLS : <fs_ekko> TYPE ty_ekko.
+FIELD-SYMBOLS : <fs_ekbe_miro> TYPE ty_ekbe.
+
+DATA : lr_excel_structure      TYPE REF TO data,
+       lo_source_table_descr   TYPE REF TO cl_abap_tabledescr,
+       lo_table_row_descriptor TYPE REF TO cl_abap_structdescr,
+       lv_content              TYPE xstring,
+       lt_binary_tab           TYPE TABLE OF sdokcntasc,
+       lv_length               TYPE i,
+       lv_filename1            TYPE string,
+       lv_path                 TYPE string,
+       lv_fullpath             TYPE string.
+
+* for selection screen
+SELECTION-SCREEN : BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+
+SELECT-OPTIONS : s_bukrs FOR bseg-bukrs NO INTERVALS OBLIGATORY,
+                 s_lifnr FOR ekko-lifnr OBLIGATORY,
+                 s_ebeln FOR ekko-ebeln,
+                 s_belnr FOR ekbe-belnr,    "migo no
+                 s_lblni FOR essr-lblni,
+                 s_budat FOR ekbe-budat OBLIGATORY,
+                 s_werks FOR ekpo-werks." OBLIGATORY,
+
+SELECTION-SCREEN : END OF BLOCK b1.
+
+START-OF-SELECTION.
+  PERFORM get_data.
+  PERFORM prepare_data.
+  PERFORM fieldcat_data.
+
+END-OF-SELECTION.
+
+  PERFORM display_alv.
+*
+*  IF it_final[] IS NOT INITIAL.
+*    PERFORM excel_instantiate.
+*    PERFORM download_to_excel.
+*  ENDIF.
+**  PERFORM f_download.
+
+*  INCLUDE zmm_grn_report_get_dataf01.
+
+*----------------------------------------------------------------------*
+***INCLUDE ZMM_GRN_REPORT_GET_DATAF01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_data .
+
+
+  CLEAR : it_final[].
+  DATA : po_cat TYPE bewtp.
+
+  SELECT  a~lifnr,
+          a~ebeln,
+          a~bsart,
+          a~bedat,
+          a~dppct,
+          a~dpamt,
+          a~dpdat,
+          a~zbd1t,
+          a~zbd2t,
+          a~zbd3t,
+          a~zterm,
+          b~belnr,
+          b~gjahr
+    FROM ekko AS a LEFT OUTER JOIN ekbe AS b ON a~ebeln = b~ebeln
+    INTO TABLE @it_ekko
+    WHERE a~lifnr IN @s_lifnr
+    AND a~ebeln IN @s_ebeln
+    AND b~budat IN @s_budat
+    AND a~bsart IN ('ZAST', 'ZFRT', 'ZNB', 'ZSKT').
+
+  if it_ekko is NOT INITIAL.
+    SORT it_ekko ASCENDING.
+  ELSE.
+    MESSAGE e001(00) WITH 'No record found'.
+  ENDIF.
+  SELECT ebeln
+    ebelp
+    werks
+    FROM ekpo INTO TABLE it_ekpo
+    FOR ALL ENTRIES IN it_ekko
+    WHERE werks IN s_werks
+    AND ebeln = it_ekko-ebeln.
+
+  SORT it_ekpo BY ebeln ebelp.
+*-----------------------vendor name------------------
+  SELECT lfa1~lifnr,
+    lfa1~name1,
+    lfa1~stcd1,
+    lfa1~stcd2,
+    lfb1~zterm
+    FROM lfa1 AS lfa1 LEFT OUTER JOIN lfb1 AS lfb1 ON lfa1~lifnr = lfb1~lifnr
+    INTO TABLE @it_lfa1
+    FOR ALL ENTRIES IN @it_ekko
+    WHERE lfa1~lifnr = @it_ekko-lifnr.
+
+  SORT it_lfa1 ASCENDING.
+
+  SELECT a~lifnr, a~banks, a~bankl, b~banka
+    FROM lfbk AS a LEFT OUTER JOIN bnka AS b ON a~banks = b~banks AND a~bankl = b~bankl
+    INTO TABLE @it_ven_bank
+    FOR ALL ENTRIES IN @it_lfa1
+    WHERE a~lifnr = @it_lfa1-lifnr.
+  SORT it_ven_bank ASCENDING.
+
+*      -------------------Service entry sheet-----------------
+  SELECT ebeln
+          ebelp
+          lblni
+          budat
+    FROM essr INTO TABLE it_essr
+    FOR ALL ENTRIES IN it_ekko
+    WHERE ebeln = it_ekko-ebeln
+    AND lblni IN s_lblni.
+  SORT it_essr ASCENDING.
+*      ----------------------posting date------------
+  SELECT ebeln
+        gjahr
+        ebelp
+        belnr
+        budat
+        menge
+        bewtp
+        dmbtr
+    FROM ekbe INTO TABLE it_ekbe
+    FOR ALL ENTRIES IN it_ekko
+    WHERE ebeln = it_ekko-ebeln
+    AND budat IN s_budat.
+  SORT it_ekbe BY ebeln ebelp bewtp.
+  delete ADJACENT DUPLICATES FROM it_ekbe COMPARING ALL FIELDS.
+  LOOP AT it_ekko ASSIGNING <fs_ekko>.
+    CONCATENATE <fs_ekko>-belnr <fs_ekko>-gjahr INTO <fs_ekko>-awkey.
+  ENDLOOP.
+
+
+  SELECT bukrs xblnr awkey belnr gjahr FROM bkpf INTO TABLE it_bkpf
+      FOR ALL ENTRIES IN it_ekko
+            WHERE awkey = it_ekko-awkey.
+  IF sy-subrc = 0.
+    SORT it_bkpf BY awkey.
+  ENDIF.
+
+  SELECT ebeln
+        gjahr
+        ebelp
+        belnr
+        budat
+        menge
+        bewtp
+        dmbtr
+    FROM ekbe INTO TABLE it_ekbe_grn
+    FOR ALL ENTRIES IN it_ekko
+    WHERE ebeln = it_ekko-ebeln
+    AND budat IN s_budat
+    AND bewtp = 'E'.
+  SORT it_ekbe_grn BY ebeln ebelp.
+
+  SELECT ebeln
+        gjahr
+        ebelp
+        belnr
+        budat
+        menge
+        bewtp
+        dmbtr
+    FROM ekbe INTO TABLE it_ekbe_miro
+    FOR ALL ENTRIES IN it_ekko
+    WHERE ebeln = it_ekko-ebeln
+    AND bewtp = 'Q'.
+
+  LOOP AT it_ekbe_miro ASSIGNING <fs_ekbe_miro>.
+    CONCATENATE <fs_ekbe_miro>-belnr <fs_ekbe_miro>-gjahr INTO <fs_ekbe_miro>-awkey.
+  ENDLOOP.
+
+  IF it_ekbe_miro IS NOT INITIAL.
+    SORT it_ekbe_miro BY ebeln ebelp.
+
+    SELECT belnr
+            gjahr
+            zuonr     "assignment
+            xblnr     "vendor invoice no
+            zfbdt     "baseline date/vendor invoice date
+            zbd1t       "days1/payment term day
+            zbd2t       "days2
+            zbd3t       "days net
+            ivtyp       "iv category for reversal
+            rmwwr       "invoice amount
+            lifnr
+      FROM rbkp INTO TABLE it_rbkp
+      FOR ALL ENTRIES IN it_ekbe_miro
+      WHERE belnr = it_ekbe_miro-belnr.
+  ENDIF.
+  SORT it_rbkp ASCENDING.
+
+  SELECT augdt
+    augbl
+    dmbtr
+    pswsl  "currency
+    valut
+    ebeln
+    ebelp
+    zfbdt
+    shkzg
+    belnr
+    gjahr
+  FROM bseg INTO TABLE it_bseg
+  FOR ALL ENTRIES IN it_bkpf
+  WHERE bukrs IN s_bukrs
+  AND belnr = it_bkpf-belnr
+  AND gjahr = it_bkpf-gjahr
+  AND koart = 'S'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  PREPARE_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM prepare_data .
+  DATA : lv_days     TYPE vtbbewe-atage,
+         lv_months   TYPE vtbbewe-atage,
+         inv_amt     TYPE i,
+         day_cnt     TYPE i,
+         lv_date     TYPE sy-datum,
+         lv_ret_date TYPE sy-datum,
+         date_from   TYPE vtbbewe-dbervon,
+         date_to     TYPE   vtbbewe-dberbis.
+  lv_total_amt = 0.
+  lv_paid_amt = 0.
+  inv_amt = 0.
+  DATA : credit_msme TYPE num VALUE 45.
+  DATA : po_cat TYPE bewtp.
+
+  wa_final-inv_amt = 0.
+  wa_final-pay_amt = 0.
+  wa_final-bal_pay_amt = 0.
+*-------------------------------------Start of new loop 08-04-23----------------------------------
+  LOOP AT it_ekbe INTO wa_ekbe.
+
+    READ TABLE it_ekko INTO wa_ekko WITH KEY ebeln = wa_ekbe-ebeln  BINARY SEARCH.
+    wa_final-lifnr = wa_ekko-lifnr.                         "vendor code
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        input  = wa_final-lifnr
+      IMPORTING
+        output = wa_final-lifnr.
+    wa_final-ebeln = wa_ekko-ebeln.                         "PO number
+    wa_final-po_dt = wa_ekko-bedat.
+    wa_final-dppct = wa_ekko-dppct.
+    wa_final-dpamt = wa_ekko-dpamt.
+    wa_final-dpdat = wa_ekko-dpdat.
+    wa_final-zterm = wa_ekko-zterm.
+    READ TABLE it_ekpo INTO wa_ekpo WITH KEY ebeln = wa_ekko-ebeln BINARY SEARCH.
+    READ TABLE it_ven_bank INTO wa_ven_bank WITH KEY lifnr = wa_ekko-lifnr BINARY SEARCH.
+    wa_final-banka = wa_ven_bank-banka.
+    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_ekko-lifnr BINARY SEARCH.
+    wa_final-name1 = wa_lfa1-name1.                         "vendor name
+    wa_final-stcd1 = wa_lfa1-stcd1.
+    IF wa_lfa1-stcd1 IS NOT INITIAL.
+      wa_final-udyam = 'Y'.
+    ELSE.
+      wa_final-udyam = 'N'.
+    ENDIF.
+    wa_final-stcd2 = wa_lfa1-stcd2.
+    READ TABLE it_essr INTO wa_essr WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*    LOOP at it_essr INTO wa_essr WHERE ebeln = wa_ekpo-ebeln and ebelp = wa_ekpo-ebelp.
+    wa_final-se_no = wa_essr-lblni.
+    wa_final-se_dt = wa_essr-budat.
+*    ENDloop.
+    READ TABLE it_ekpo INTO wa_ekpo WITH KEY ebeln = wa_ekbe-ebeln ebelp = wa_ekbe-ebelp BINARY SEARCH.
+    wa_final-werks = wa_ekpo-werks.
+    wa_final-ebelp = wa_ekpo-ebelp.
+    READ TABLE it_ekbe_grn INTO wa_ekbe_grn WITH KEY ebeln = wa_ekbe-ebeln ebelp = wa_ekbe-ebelp BINARY SEARCH.
+*    LOOP at it_ekbe_grn INTO wa_ekbe_grn WHERE ebeln = wa_ekbe-ebeln and ebelp = wa_ekbe-ebelp.
+    wa_final-stcd2 = wa_lfa1-stcd2.
+    wa_final-grn_no = wa_ekbe_grn-belnr.
+    wa_final-grn_dt = wa_ekbe_grn-budat.
+*    endloop.
+    READ TABLE it_ekbe_miro INTO wa_ekbe_miro WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*    LOOP at it_ekbe_miro INTO wa_ekbe_miro WHERE ebeln = wa_ekpo-ebeln and ebelp = wa_ekpo-ebelp.
+    wa_final-miro_no = wa_ekbe_miro-belnr.
+    wa_final-miro_dt = wa_ekbe_miro-budat.
+    wa_final-inv_amt = wa_ekbe_miro-dmbtr.
+*    endloop.
+    READ TABLE it_rbkp INTO wa_rbkp WITH KEY belnr = wa_ekbe_miro-belnr BINARY SEARCH.
+    wa_final-ven_inv_no = wa_rbkp-xblnr .
+    wa_final-ven_inv_dt = wa_rbkp-zfbdt.
+    wa_final-iv_cat = wa_rbkp-ivtyp.         "IV Category
+    wa_final-pay_term_day = wa_rbkp-zbd1t.
+    IF wa_final-iv_cat EQ '5'.
+      wa_final-inv_amt = wa_final-inv_amt * -1.
+    ENDIF.
+    READ TABLE it_bkpf INTO wa_bkpf WITH KEY belnr = wa_ekbe_miro-belnr gjahr = wa_ekbe_miro-gjahr BINARY SEARCH.
+    READ TABLE it_bseg INTO wa_bseg WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp belnr = wa_bkpf-belnr gjahr = wa_bkpf-gjahr BINARY SEARCH.
+    wa_final-clr_doc = wa_bseg-augbl.
+    wa_final-pay_date = wa_bseg-augdt.
+    IF wa_bseg-augbl IS INITIAL.
+      wa_final-pay_amt = 0.
+    ELSE.
+      wa_final-pay_amt = wa_bseg-dmbtr.
+    ENDIF.
+    IF wa_bseg-shkzg = 'S'.
+      wa_final-bal_pay_amt = wa_bseg-dmbtr - wa_final-pay_amt.
+    ELSEIF wa_bseg-shkzg = 'H'.
+      wa_final-bal_pay_amt = ( wa_bseg-dmbtr - wa_final-pay_amt ) * -1.
+    ENDIF.
+*
+    day_cnt = wa_final-pay_term_day + wa_rbkp-zbd2t + wa_rbkp-zbd3t.
+
+    lv_date = wa_final-ven_inv_dt.
+    CALL FUNCTION 'BKK_ADD_WORKINGDAY'
+      EXPORTING
+        i_date = lv_date
+        i_days = day_cnt
+*       I_CALENDAR1       = I_CALENDAR1
+*       I_CALENDAR2       = I_CALENDAR2
+      IMPORTING
+        e_date = lv_ret_date
+*       E_RETURN          = E_RETURN
+      .
+*    delete ADJACENT DUPLICATES FROM it_final COMPARING ALL FIELDS.
+    APPEND wa_final TO it_final.
+    CLEAR : wa_bseg,wa_bkpf,wa_ekko,wa_ekpo,wa_ekbe,wa_ekbe_grn,wa_ekbe_miro,wa_rbkp,wa_essr,wa_lfa1,wa_ven_bank,wa_final.
+  ENDLOOP.
+ENDFORM.
+*-------------------------------------end of new loop 08-04-23------------------
+*  LOOP AT it_ekpo INTO wa_ekpo.
+*    WA_FINAL-EBELP = WA_EKPO-EBELP.
+*    READ TABLE it_ekko INTO wa_ekko WITH KEY ebeln = wa_ekpo-ebeln.
+*    wa_final-lifnr = wa_ekko-lifnr.                         "vendor code
+*    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+*      EXPORTING
+*        input  = wa_final-lifnr
+*      IMPORTING
+*        output = wa_final-lifnr.
+*    wa_final-ebeln = wa_ekko-ebeln.                         "PO number
+*    wa_final-po_dt = wa_ekko-bedat.
+*    wa_final-dppct = wa_ekko-dppct.
+*    wa_final-dpamt = wa_ekko-dpamt.
+*    wa_final-dpdat = wa_ekko-dpdat.
+*    wa_final-zterm = wa_ekko-zterm.
+*    IF it_essr IS NOT INITIAL.
+*      READ TABLE it_essr INTO wa_essr WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*      wa_final-se_no = wa_essr-lblni.
+*      wa_final-se_dt = wa_essr-budat.
+*    ENDIF.
+*    READ TABLE it_ven_bank INTO wa_ven_bank WITH KEY lifnr = wa_ekko-lifnr BINARY SEARCH.
+*    wa_final-banka = wa_ven_bank-banka.
+*    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_ekko-lifnr BINARY SEARCH.
+*    wa_final-name1 = wa_lfa1-name1.                         "vendor name
+*    wa_final-stcd1 = wa_lfa1-stcd1.
+*    IF wa_lfa1-stcd1 IS NOT INITIAL.
+*      wa_final-udyam = 'Y'.
+*    ELSE.
+*      wa_final-udyam = 'N'.
+*    ENDIF.
+*    wa_final-stcd2 = wa_lfa1-stcd2.
+*    wa_final-werks = wa_ekpo-werks.
+*    READ TABLE it_ekbe_grn INTO wa_ekbe_grn WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*    wa_final-grn_no = wa_ekbe_grn-belnr.
+*    wa_final-grn_dt = wa_ekbe_grn-budat.
+*    READ TABLE it_ekbe_miro INTO wa_ekbe_miro WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*    wa_final-miro_no = wa_ekbe_miro-belnr.
+*    wa_final-miro_dt = wa_ekbe_miro-budat.
+*    wa_final-inv_amt = wa_ekbe_miro-dmbtr.
+*    READ TABLE it_rbkp INTO wa_rbkp WITH KEY belnr = wa_ekbe_miro-belnr BINARY SEARCH.
+*    wa_final-ven_inv_no = wa_rbkp-xblnr .
+*    wa_final-ven_inv_dt = wa_rbkp-zfbdt.
+*    wa_final-iv_cat = wa_rbkp-ivtyp.         "IV Category
+*    wa_final-pay_term_day = wa_rbkp-zbd1t.
+*    IF wa_final-iv_cat EQ '5'.
+*      wa_final-inv_amt = wa_final-inv_amt * -1.
+*    ENDIF.
+*    READ TABLE it_bseg INTO wa_bseg WITH KEY ebeln = wa_ekpo-ebeln ebelp = wa_ekpo-ebelp BINARY SEARCH.
+*    wa_final-clr_doc = wa_bseg-augbl.
+*    wa_final-pay_date = wa_bseg-augdt.
+*     if wa_bseg-augbl is INITIAL.
+*      wa_final-pay_amt = 0.
+*    ELSE.
+*      wa_final-pay_Amt = wa_bseg-dmbtr.
+*    ENDIF.
+*    IF wa_bseg1-shkzg = 'S'.
+*      wa_final-bal_pay_amt = wa_bseg-dmbtr - wa_final-pay_amt.
+*    ELSEIF wa_bseg-shkzg = 'H'.
+*      wa_final-bal_pay_amt = ( wa_bseg-dmbtr - wa_final-pay_amt ) * -1.
+*    ENDIF.
+*
+*    day_cnt = wa_final-pay_term_day + wa_rbkp-zbd2t + wa_rbkp-zbd3t.
+*
+*    lv_date = wa_final-ven_inv_dt.
+*    CALL FUNCTION 'BKK_ADD_WORKINGDAY'
+*      EXPORTING
+*        i_date = lv_date
+*        i_days = day_cnt
+**       I_CALENDAR1       = I_CALENDAR1
+**       I_CALENDAR2       = I_CALENDAR2
+*      IMPORTING
+*        e_date = lv_ret_date
+**       E_RETURN          = E_RETURN
+*      .
+*    IF lv_ret_date IS INITIAL OR day_cnt IS INITIAL.
+*      lv_ret_date = lv_date.
+*    ENDIF.
+*    wa_final-pay_due_date = lv_ret_date.
+*    date_from = wa_final-pay_date.
+*    date_to = wa_final-pay_due_date.
+*    CALL FUNCTION 'FIMA_DAYS_AND_MONTHS_AND_YEARS'
+*      EXPORTING
+*        i_date_from = date_from
+*        i_date_to   = date_to
+*      IMPORTING
+*        e_days      = lv_days
+*        e_months    = lv_months.
+*    wa_final-delay_d = lv_days.
+*    wa_final-delay_m = lv_months.
+*    wa_final-credit_msme = credit_msme.
+*
+*    APPEND wa_final TO it_final.
+*    clear : wa_bseg,wa_bkpf,wa_ekko,wa_ekpo,wa_ekbe,wa_ekbe_grn,wa_ekbe_miro,wa_rbkp,wa_essr,wa_lfa1,wa_ven_bank,wa_final.
+*  ENDLOOP.
+*
+*ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  FIELDCAT_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM fieldcat_data .
+
+  PERFORM create_fcat USING '1' 'LIFNR' 'VENDOR_CODE'.
+  PERFORM create_fcat USING '2' 'NAME1' 'VENDOR_NAME'.
+  PERFORM create_fcat USING '3' 'EBELP' 'PO_ITEM'.
+  PERFORM create_fcat USING '4' 'EBELN' 'PO_NO'.
+  PERFORM create_fcat USING '5' 'PO_DT' 'PO_DATE'.
+  PERFORM create_fcat USING '6' 'WERKS' 'PLANT'.
+  PERFORM create_fcat USING '7' 'GRN_NO' 'GRN_NO'.
+  PERFORM create_fcat USING '8' 'GRN_DT' 'GRN_DATE'.
+  PERFORM create_fcat USING '9' 'SE_NO' 'SERVICE_ENTRY_NO'.
+  PERFORM create_fcat USING '10' 'SE_DT' 'SERVICE_ENTRY_DATE'.
+  PERFORM create_fcat USING '11' 'VEN_INV_NO' 'VENDOR_INVOICE_NO'.
+  PERFORM create_fcat USING '12' 'VEN_INV_DT' 'VENDOR_INVOICE_DATE'.
+  PERFORM create_fcat USING '13' 'MIRO_NO' 'MIRO_NO'.
+  PERFORM create_fcat USING '14' 'MIRO_DT' 'MIRO_DATE'.
+  PERFORM create_fcat USING '15' 'INV_AMT' 'INVOICE_AMOUNT'.
+  PERFORM create_fcat USING '16' 'ZTERM' 'PAYMENT_TERM'.
+  PERFORM create_fcat USING '17' 'PAY_TERM_DAY' 'PAYMENT_TERM_DAYS'.
+  PERFORM create_fcat USING '18' 'DPPCT' 'DOWN_PAYMENT_ADV%'.
+  PERFORM create_fcat USING '19' 'DPAMT' 'DOWN_PAYMENT_AMOUNT'.
+  PERFORM create_fcat USING '20' 'DPDAT' 'DOWN_PAYMENT_DATE'.
+  PERFORM create_fcat USING '21' 'VALUT' 'DOWN_PAYMENT_POSTING_DATE'.
+  PERFORM create_fcat USING '22' 'WRBTR' 'DOWN_PAYMENT_PAID_AMOUNT'.
+  PERFORM create_fcat USING '23' 'CLR_DOC' 'FINAL_CLEARING_DOCUMENT'.
+  PERFORM create_fcat USING '24' 'PAY_DUE_DATE' 'PAYMENT_DUE_DATE'.
+  PERFORM create_fcat USING '25' 'PAY_DATE' 'PAYMENT_DATE'.
+  PERFORM create_fcat USING '26' 'PAY_AMT' 'PAYMENT_AMOUNT'.
+  PERFORM create_fcat USING '27' 'BAL_PAY_AMT' 'BALANCE_PAYMENT_AMOUNT'.
+  PERFORM create_fcat USING '28' 'BANKA' 'BANK_NAME'.
+  PERFORM create_fcat USING '29' 'DELAY_D' 'DELAY(DAYS)'.
+  PERFORM create_fcat USING '30' 'DELAY_M' 'DELAY(MONTHS)'.
+  PERFORM create_fcat USING '31' 'CREDIT_MSME' 'CREDIT_AS_PER_MSME_ACT'.
+  PERFORM create_fcat USING '32' 'UDYAM' 'UDYAM(YES/NO)'.
+  PERFORM create_fcat USING '33' 'STCD1' 'IUDYAM_CERTIFICATE'.
+  PERFORM create_fcat USING '34' 'STCD2' 'PAN_DETAILS'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_ALV
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM display_alv .
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+*     I_INTERFACE_CHECK  = ' '
+*     I_BYPASSING_BUFFER = ' '
+*     I_BUFFER_ACTIVE    = ' '
+      i_callback_program = sy-repid
+*     I_CALLBACK_PF_STATUS_SET          = ' '
+*     I_CALLBACK_USER_COMMAND           = ' '
+*     I_CALLBACK_TOP_OF_PAGE            = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*     I_STRUCTURE_NAME   = I_STRUCTURE_NAME
+*     I_BACKGROUND_ID    = ' '
+*     I_GRID_TITLE       = I_GRID_TITLE
+*     I_GRID_SETTINGS    = I_GRID_SETTINGS
+*     IS_LAYOUT          = IS_LAYOUT
+      it_fieldcat        = it_fcat
+*     IT_EXCLUDING       = IT_EXCLUDING
+*     IT_SPECIAL_GROUPS  = IT_SPECIAL_GROUPS
+      it_sort            = it_sort
+*     IT_FILTER          = IT_FILTER
+*     IS_SEL_HIDE        = IS_SEL_HIDE
+*     I_DEFAULT          = 'X'
+      i_save             = 'A'
+*     IS_VARIANT         = IS_VARIANT
+*     IT_EVENTS          = IT_EVENTS
+*     IT_EVENT_EXIT      = IT_EVENT_EXIT
+*     IS_PRINT           = IS_PRINT
+*     IS_REPREP_ID       = IS_REPREP_ID
+*     I_SCREEN_START_COLUMN             = 0
+*     I_SCREEN_START_LINE               = 0
+*     I_SCREEN_END_COLUMN               = 0
+*     I_SCREEN_END_LINE  = 0
+*     I_HTML_HEIGHT_TOP  = 0
+*     I_HTML_HEIGHT_END  = 0
+*     IT_ALV_GRAPHICS    = IT_ALV_GRAPHICS
+*     IT_HYPERLINK       = IT_HYPERLINK
+*     IT_ADD_FIELDCAT    = IT_ADD_FIELDCAT
+*     IT_EXCEPT_QINFO    = IT_EXCEPT_QINFO
+*     IR_SALV_FULLSCREEN_ADAPTER        = IR_SALV_FULLSCREEN_ADAPTER
+*   IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER           = E_EXIT_CAUSED_BY_CALLER
+*     ES_EXIT_CAUSED_BY_USER            = ES_EXIT_CAUSED_BY_USER
+    TABLES
+      t_outtab           = it_final
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  CREATE_FCAT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_0289   text
+*      -->P_0290   text
+*      -->P_0291   text
+*----------------------------------------------------------------------*
+FORM create_fcat  USING    VALUE(p_col)
+                           VALUE(p_fld)
+                           VALUE(p_txt).
+
+  w_fcat-col_pos = p_col.
+  w_fcat-fieldname = p_fld.
+  w_fcat-seltext_l = p_txt.
+  APPEND w_fcat TO it_fcat.
+  CLEAR w_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  F_DOWNLOAD
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM f_download .
+
+  DATA : lv_filename TYPE string,
+         lv_path     TYPE string,
+         lv_fullpath TYPE string,
+         lv_result   TYPE i,
+         lv_default  TYPE string,
+         lv_fname    TYPE string.
+
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title      = 'File Directory'
+      default_extension = 'XLS'
+      initial_directory = 'D:\'
+    CHANGING
+      filename          = lv_filename
+      path              = lv_path
+      fullpath          = lv_fullpath
+      user_action       = lv_result.
+
+  lv_fname = lv_fullpath.
+*  download file in excel
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      bin_filesize            = ''
+      filename                = lv_fname
+      filetype                = 'DAT'
+*     APPEND                  = ' '
+*     WRITE_FIELD_SEPARATOR   = ' '
+*     HEADER                  = '00'
+*     TRUNC_TRAILING_BLANKS   = ' '
+*     WRITE_LF                = 'X'
+*     COL_SELECT              = ' '
+*     COL_SELECT_MASK         = ' '
+*     DAT_MODE                = ' '
+*     CONFIRM_OVERWRITE       = ' '
+*     NO_AUTH_CHECK           = ' '
+*     CODEPAGE                = ' '
+*     IGNORE_CERR             = ABAP_TRUE
+*     REPLACEMENT             = '#'
+*     WRITE_BOM               = ' '
+*     TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*     WK1_N_FORMAT            = ' '
+*     WK1_N_SIZE              = ' '
+*     WK1_T_FORMAT            = ' '
+*     WK1_T_SIZE              = ' '
+*     WRITE_LF_AFTER_LAST_LINE        = ABAP_TRUE
+*     SHOW_TRANSFER_STATUS    = ABAP_TRUE
+*     VIRUS_SCAN_PROFILE      = '/SCET/GUI_DOWNLOAD'
+*         IMPORTING
+*     FILELENGTH              = FILELENGTH
+    TABLES
+      data_tab                = it_final
+      fieldnames              = it_fcat
+    EXCEPTIONS
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      OTHERS                  = 22.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  EXCEL_INSTANTIATE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM excel_instantiate .
+
+  "create data reference
+  GET REFERENCE OF it_final INTO lr_excel_structure.
+  DATA(lo_itab_services) = cl_salv_itab_services=>create_for_table_ref( lr_excel_structure ).
+  lo_source_table_descr ?= cl_abap_tabledescr=>describe_by_data_ref( lr_excel_structure ).
+  lo_table_row_descriptor ?= lo_source_table_descr->get_table_line_type( ).
+
+* excel instantiate
+  DATA(lo_tool_xls) = cl_salv_export_tool_ats_xls=>create_for_excel(
+                      EXPORTING r_data = lr_excel_structure ).
+
+*Add columns to sheet
+  DATA(lo_config) = lo_tool_xls->configuration( ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'Company Code'
+      field_name = 'BUKRS'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'VENDOR_CODE'
+      field_name = 'LIFNR'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'VENDOR_NAME'
+      field_name = 'NAME1'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'CLASSIFICATION_DATA'
+      field_name = ' '
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PO_NO'
+      field_name = 'EBELN'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PO_DATE'
+      field_name = 'PO_DT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PLANT'
+      field_name = 'WERKS'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'GRN_NO'
+      field_name = 'GRN_NO'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'GRN_DATE'
+      field_name = 'GRN_DT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'SERVICE_ENTRY_NO'
+      field_name = 'SE_NO'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'SERVICE_ENTRY_DATE'
+      field_name = 'SE_DT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'VENDOR_INVOICE_NO'
+      field_name = 'VEN_INV_NO'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'VENDOR_INVOICE_DATE'
+      field_name = 'VEN_INV_DT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'MIRO_NO'
+      field_name = 'MIRO_NO'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'MIRO_DATE'
+          field_name = 'MIRO_DT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'INVOICE_AMOUNT'
+      field_name = 'INV_AMT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PAYMENT_TERM'
+      field_name = 'ZTERM'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PAYMENT_TERM_DAYS'
+      field_name = 'PAY_TERM_DAY'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DOWN_PAYMENT_ADV%'
+      field_name = 'DPPCT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DOWN_PAYMENT_AMOUNT'
+      field_name = 'DPAMT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DOWN_PAYMENT_DATE'
+      field_name = 'DPDAT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DOWN_PAYMENT_POSTING_DATE'
+      field_name = 'VALUT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DOWN_PAYMENT_PAID_AMOUNT'
+      field_name = 'WRBTR'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'FINAL_CLEARING_DOCUMENT'
+      field_name = 'CLR_DOC'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PAYMENT_DUE_DATE'
+      field_name = 'PAY_DUE_DATE'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PAYMENT_DATE'
+      field_name = 'PAY_DATE'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'BANK_NAME'
+      field_name = 'BANKA'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'BALANCE_PAYMENT_AMOUNT'
+      field_name = 'BAL_PAY_AMT'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text =  'DELAY(DAYS)'
+      field_name = 'DELAY_D'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'DELAY(MONTHS)'
+      field_name = 'DELAY_M'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'CREDIT_AS_PER_MSME_ACT'
+      field_name = 'CREDIT_MSME'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'UDYAM(YES/NO)'
+      field_name = 'UDYAM'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'IUDYAM_CERTIFICATE'
+      field_name = 'STCD1'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+
+  lo_config->add_column(
+    EXPORTING
+      header_text = 'PAN_DETAILS'
+      field_name = 'STCD2'
+      display_type = if_salv_bs_model_column=>uie_text_view ).
+*BREAK-POINT.
+
+  "GET excel in xstring
+  TRY.
+      lo_tool_xls->read_result( IMPORTING content = lv_content ).
+    CATCH cx_root.
+  ENDTRY.
+
+
+  CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+    EXPORTING
+      buffer        = lv_content
+*     APPEND_TO_TABLE       = ' '
+    IMPORTING
+      output_length = lv_length
+    TABLES
+*     binary_tab    = it_final. "lt_binary_tab.
+      binary_tab    = lt_binary_tab.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  DOWNLOAD_TO_EXCEL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM download_to_excel .
+
+  CONCATENATE 'Supplier Report' sy-datum sy-uzeit INTO lv_filename1 SEPARATED BY '_'.
+  "to get file save location
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title      = 'Enter File Name'
+      default_extension = 'XLSX'
+      default_file_name = lv_filename1
+    CHANGING
+      filename          = lv_filename1
+      path              = lv_path
+      fullpath          = lv_fullpath.
+
+  IF lv_fullpath IS NOT INITIAL.
+
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        bin_filesize            = lv_length
+        filename                = lv_fullpath
+        filetype                = 'BIN'
+      TABLES
+*       data_tab                = it_final "lt_binary_tab
+        data_tab                = lt_binary_tab
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21
+        OTHERS                  = 22.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ELSE.
+
+      CALL METHOD cl_gui_frontend_services=>execute
+        EXPORTING
+          document               = lv_fullpath
+        EXCEPTIONS
+          cntl_error             = 1
+          error_no_gui           = 2
+          bad_parameter          = 3
+          file_not_found         = 4
+          path_not_found         = 5
+          file_extension_unknown = 6
+          error_execute_failed   = 7
+          synchronous_failed     = 8
+          not_supported_by_gui   = 9
+          OTHERS                 = 10.
+
+*      IF sy-subrc <> 0.
+*
+*      ENDIF.
+    ENDIF.
+  ENDIF.
+ENDFORM.
